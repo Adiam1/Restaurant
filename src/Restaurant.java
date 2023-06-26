@@ -10,10 +10,8 @@ public class Restaurant {
 	private Set<Table> tables = new HashSet<Table>();
 	private static Restaurant instance;
 	private AtomicBoolean atomicBoolean = new AtomicBoolean(false);
-	/*
-	 * this implementation of getInstance return null and obviously wrong.
-	 * implement this class as a thread-safe singleton
-	 */
+	private final Object tablesLock = new Object();
+	
 	public static Restaurant getInstance() 
 	{
 		if (instance == null) 
@@ -30,37 +28,50 @@ public class Restaurant {
 		return instance;
 	}
 	
-	public void order(int i) 
+	
+	
+	public void order(int tableNumber) 
 	{
 		/*
 		 * 1) you might get concurrent modification exception.
 		 * 2) do not close too tight!
 		 * 3) this method is BLOCKING until a corresponding table exists...
-		 * 4) blocked thread must be informed when the program terminates... 
+		 * 4) blocked thread must be informed when the program terminates... !!
 		 */
-		
-		while(instance.getTableById(i) == null)
-		{
-			try {
-				wait(1000);
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-				return;//check later//TODO 4
-			}//check later
-			System.out.println("waiting for table " + i + " to be created....");
-		}
-		
-		while(atomicBoolean.compareAndSet(false,true)) {};
-		instance.getTableById(i).addDish();
-		atomicBoolean.set(false);
+	    Table table;
+
+	    synchronized (tablesLock) 
+	    {
+	        table = getTableById(tableNumber);
+
+	        while (table == null) 
+	        {
+	            // Table not found, wait for it to become available
+	            try {
+	                tablesLock.wait(100);
+	                table = getTableById(tableNumber); // Recheck the table after waking up
+	            } 
+	            catch (InterruptedException e) 
+	            {
+	                // Handle interrupted exception
+	            	//Thread.currentThread().notify();//TODO - figure out if we need this
+	                Thread.currentThread().interrupt(); // Restore interrupted status
+	                return; // Exit the method
+	            }
+	        }
+	    }
+
+	    // Table found, place the order
+	    table.addDish();
+	    System.out.println("Order placed for table " + tableNumber);//TODO - delete at end
 	}
+
 	
 	public void openTable(int i) 
 	{
 		while(atomicBoolean.compareAndSet(false,true)) {};
 		tables.add(new Table(i));
 		atomicBoolean.set(false);
-		// you must not assume thread-safety adding elements to a set.
 	}
 	
 	/*
@@ -72,15 +83,19 @@ public class Restaurant {
 	public void closeTable(int i) {
 		
 		Table t = null;
+		while(atomicBoolean.compareAndSet(false,true)) {};
+		
 		for (Table tmp: tables) {
 			if (tmp.getId() == i) {
 				t = tmp;
 				break;
 			}
 		}
-		
+
+		System.out.println("Remove table number " + t.getId());
 		tables.remove(t);
-		balance.addAndGet(t.numOfDishes());//TODO
+		balance.addAndGet(t.numOfDishes()); //TODO - add and get or add and update
+		atomicBoolean.set(false);
 	}
 	
 	// do not modify this method
@@ -96,6 +111,7 @@ public class Restaurant {
 		
 		System.out.println(n_tables + " table(s), " + n_dishes + " dishe(s), " + balance + " balance");
 	}
+	
 	
 	private Table getTableById(int tableId) 
 	{

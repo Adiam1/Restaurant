@@ -5,8 +5,8 @@ public class Main {
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
 		
-		Thread t1 = new Thread(new Host("011"));
-		Thread t2 = new Thread(new Host("0"));
+		Thread t1 = new Thread(new Host("01112"));
+		Thread t2 = new Thread(new Host("0031"));
 		Thread t3 = new Thread(new Waiter("1"));
 		Thread t4 = new Thread(new Waiter("2"));
 		
