@@ -4,7 +4,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 public class Table {
 	
-	private Set<Dish> dishes = new HashSet<Dish>(); // you must work on this DS
+	private Set<Dish> dishes = new HashSet<Dish>();
 	private int id;
 	private AtomicBoolean atomicBoolean = new AtomicBoolean(false);
 
@@ -12,7 +12,6 @@ public class Table {
 		this.id = id;
 	}
 	
-	// LOCK-FREE IMPLEMENTATION, you can either try-and-fail or AtomicBoolean...
 	public void addDish() 
 	{
 		while(atomicBoolean.compareAndSet(false,true)) {};
@@ -24,8 +23,8 @@ public class Table {
 		return id;
 	}
 
-	// you can assume this is good as is
-	public int numOfDishes() {
+	public int numOfDishes() 
+	{
 		return dishes.size();
 	}
 	
@@ -40,6 +39,4 @@ public class Table {
     public int hashCode() {
         return id;
     }
-	
-	//TODO destructor
 }

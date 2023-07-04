@@ -6,7 +6,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class Restaurant {
 
-	private AtomicInteger balance = new AtomicInteger(0); // you can use AtomicInteger instead
+	private AtomicInteger balance = new AtomicInteger(0);
 	private Set<Table> tables = new HashSet<Table>();
 	private static Restaurant instance;
 	private AtomicBoolean atomicBoolean = new AtomicBoolean(false);
@@ -32,38 +32,35 @@ public class Restaurant {
 	
 	public void order(int tableNumber) 
 	{
-		/*
-		 * 1) you might get concurrent modification exception.
-		 * 2) do not close too tight!
-		 * 3) this method is BLOCKING until a corresponding table exists...
-		 * 4) blocked thread must be informed when the program terminates... !!
-		 */
 	    Table table;
 
-	    synchronized (tablesLock) 
-	    {
-	        table = getTableById(tableNumber);
+	        table = null;
 
 	        while (table == null) 
 	        {
 	            // Table not found, wait for it to become available
 	            try {
-	                tablesLock.wait(100);
-	                table = getTableById(tableNumber); // Recheck the table after waking up
+	            	table = getTableById(tableNumber);
+	            	if(table == null)
+	            	{
+	            		synchronized (tablesLock)
+	            		{
+			                tablesLock.wait(100);
+	            		}
+	            	}
+
 	            } 
 	            catch (InterruptedException e) 
 	            {
-	                // Handle interrupted exception
-	            	//Thread.currentThread().notify();//TODO - figure out if we need this
 	                Thread.currentThread().interrupt(); // Restore interrupted status
-	                return; // Exit the method
+	                return;
 	            }
 	        }
-	    }
 
-	    // Table found, place the order
-	    table.addDish();
-	    System.out.println("Order placed for table " + tableNumber);//TODO - delete at end
+	        synchronized (table) // Table found, place the order
+    		{
+	        	table.addDish();
+    		}
 	}
 
 	
@@ -74,12 +71,6 @@ public class Restaurant {
 		atomicBoolean.set(false);
 	}
 	
-	/*
-	 * a corresponding table is guaranteed to exist.
-	 * this implementation is good under SERIAL PROGRAM,
-	 * however, in this assignment you might get ConcurrentModificationException -
-	 * avoid it by LOCK-FREE IMPLEMENTATION
-	 */
 	public void closeTable(int i) {
 		
 		Table t = null;
@@ -91,10 +82,8 @@ public class Restaurant {
 				break;
 			}
 		}
-
-		System.out.println("Remove table number " + t.getId());
 		tables.remove(t);
-		balance.addAndGet(t.numOfDishes()); //TODO - add and get or add and update
+		balance.addAndGet(t.numOfDishes());
 		atomicBoolean.set(false);
 	}
 	

@@ -1,14 +1,13 @@
-
 // you must not modify this file!!!
 public class Main {
 
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
 		
-		Thread t1 = new Thread(new Host("01112"));
-		Thread t2 = new Thread(new Host("0031"));
-		Thread t3 = new Thread(new Waiter("1"));
-		Thread t4 = new Thread(new Waiter("2"));
+		Thread t1 = new Thread(new Host(args[0]));
+		Thread t2 = new Thread(new Host(args[1]));
+		Thread t3 = new Thread(new Waiter(args[2]));
+		Thread t4 = new Thread(new Waiter(args[3]));
 		
 		t1.start();
 		t2.start();
@@ -16,7 +15,7 @@ public class Main {
 		t4.start();
 		
 		try {
-			Thread.sleep(Integer.parseInt("5000"));
+			Thread.sleep(Integer.parseInt(args[4]));
 		} catch (NumberFormatException | InterruptedException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
